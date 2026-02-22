@@ -1,0 +1,175 @@
+-- ================================
+-- CREATE TABLES
+-- ================================
+
+-- Patients table with patient_id as primary key
+CREATE TABLE Patients (
+    patient_id INT IDENTITY(1,1) PRIMARY KEY,
+    patient_name VARCHAR(50) NOT NULL,
+    age INT CHECK (age > 0),
+    gender VARCHAR(10) CHECK (gender IN ('Male','Female')),
+    phone VARCHAR(15) NOT NULL
+);
+
+-- Doctors table with doctor_id as primary key
+CREATE TABLE Doctors (
+    doctor_id INT IDENTITY(1,1) PRIMARY KEY,
+    doctor_name VARCHAR(50) NOT NULL,
+    specialization VARCHAR(50) NOT NULL,
+    salary DECIMAL(10,2) CHECK (salary > 0)
+);
+
+-- Appointments table linking patients and doctors
+CREATE TABLE Appointments (
+    appointment_id INT IDENTITY(1,1) PRIMARY KEY,
+    patient_id INT NOT NULL,
+    doctor_id INT NOT NULL,
+    appointment_date DATE NOT NULL,
+    status VARCHAR(20) CHECK (status IN ('Completed','Pending','Cancelled')),
+    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id)
+);
+
+-- Medicines table
+CREATE TABLE Medicines (
+    medicine_id INT IDENTITY(1,1) PRIMARY KEY,
+    medicine_name VARCHAR(50) NOT NULL,
+    price DECIMAL(8,2) CHECK (price > 0)
+);
+
+-- Prescriptions table linking appointments and medicines
+CREATE TABLE Prescriptions (
+    prescription_id INT IDENTITY(1,1) PRIMARY KEY,
+    appointment_id INT NOT NULL,
+    medicine_id INT NOT NULL,
+    dosage VARCHAR(50) NOT NULL,
+    FOREIGN KEY (appointment_id) REFERENCES Appointments(appointment_id),
+    FOREIGN KEY (medicine_id) REFERENCES Medicines(medicine_id)
+);
+
+-- ================================
+-- INSERT SAMPLE DATA
+-- ================================
+
+-- Patients
+INSERT INTO Patients (patient_name, age, gender, phone) VALUES
+('Aayusha', 21, 'Female', '9800000001'),
+('Riya', 25, 'Female', '9800000002'),
+('Ram', 30, 'Male', '9800000003'),
+('Hari', 28, 'Male', '9800000004'),
+('Sita', 35, 'Female', '9800000005'),
+('Sabina', 38, 'Female', '9800000006');
+
+-- Doctors
+INSERT INTO Doctors (doctor_name, specialization, salary) VALUES
+('Dr. Sharma', 'Cardiologist', 80000),
+('Dr. Karki', 'Dermatologist', 60000),
+('Dr. Thapa', 'Neurologist', 90000),
+('Dr. Rai', 'Orthopedic', 75000),
+('Dr. Lama', 'Pediatrician', 70000),
+('Dr. KC', 'Gynecologist', 50000);
+
+-- Appointments
+INSERT INTO Appointments (patient_id, doctor_id, appointment_date, status) VALUES
+(1, 1, '2026-02-01', 'Completed'),
+(2, 2, '2026-02-02', 'Completed'),
+(3, 3, '2026-02-03', 'Pending'),
+(1, 4, '2026-02-04', 'Completed'),
+(5, 5, '2026-02-05', 'Pending'),
+(6, 6, '2026-02-06', 'Completed');
+
+-- Medicines
+INSERT INTO Medicines (medicine_name, price) VALUES
+('Paracetamol', 10),
+('Aspirin', 15),
+('Ibuprofen', 20),
+('Amoxicillin', 25),
+('Vitamin C', 12),
+('Cough Syrup', 18);
+
+-- Prescriptions
+INSERT INTO Prescriptions (appointment_id, medicine_id, dosage) VALUES
+(1, 1, '2 times daily'),
+(1, 2, '1 time daily'),
+(2, 3, '2 times daily'),
+(3, 4, '3 times daily'),
+(4, 5, '1 time daily'),
+(6, 6, '2 times daily');
+
+-- ================================
+-- JOIN EXAMPLES
+-- ================================
+
+-- INNER JOIN: Show patients with their doctors and appointment dates
+SELECT p.patient_name, d.doctor_name, a.appointment_date
+FROM Appointments a
+INNER JOIN Patients p ON a.patient_id = p.patient_id
+INNER JOIN Doctors d ON a.doctor_id = d.doctor_id;
+
+-- LEFT JOIN: Show all patients with their appointments (if any)
+SELECT p.patient_name, a.appointment_date
+FROM Patients p
+LEFT JOIN Appointments a ON p.patient_id = a.patient_id;
+
+-- RIGHT JOIN: Show all doctors with their appointments (if any)
+SELECT d.doctor_name, a.appointment_date
+FROM Appointments a
+RIGHT JOIN Doctors d ON a.doctor_id = d.doctor_id;
+
+-- ================================
+-- AGGREGATE FUNCTIONS
+-- ================================
+
+-- Total number of patients
+SELECT COUNT(*) AS total_patients FROM Patients;
+
+-- Number of appointments per doctor
+SELECT doctor_id, COUNT(*) AS total_appointments
+FROM Appointments
+GROUP BY doctor_id;
+
+-- Total salary of all doctors
+SELECT SUM(salary) AS total_salary FROM Doctors;
+
+-- Average price of all medicines
+SELECT AVG(price) AS average_price FROM Medicines;
+
+-- Doctors with salary above average
+SELECT doctor_name, salary
+FROM Doctors
+WHERE salary > (SELECT AVG(salary) FROM Doctors);
+
+-- ================================
+-- VIEW
+-- ================================
+
+-- Create a view showing patient appointment history
+Go
+CREATE VIEW PatientHistory AS
+SELECT p.patient_name, d.doctor_name, a.appointment_date
+FROM Appointments a
+JOIN Patients p ON a.patient_id = p.patient_id
+JOIN Doctors d ON a.doctor_id = d.doctor_id;
+Go
+-- Query the view
+SELECT * FROM PatientHistory;
+
+-- ================================
+-- TRANSACTION EXAMPLES
+-- ================================
+
+-- Transaction 1: Insert a new patient and commit
+BEGIN TRANSACTION;
+
+INSERT INTO Patients (patient_name, age, gender, phone)
+VALUES ('Nirmala', 32, 'Female', '9800000007');
+
+COMMIT;
+
+-- Transaction 2: Insert a new patient but rollback
+BEGIN TRANSACTION;
+
+INSERT INTO Patients (patient_name, age, gender, phone)
+VALUES ('Ramesh', 45, 'Male', '9800000008');
+
+ROLLBACK;  -- Changes will not be saved
